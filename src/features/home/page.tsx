@@ -60,8 +60,11 @@ export function HomePage() {
   const { search } = useSearch({ from: "/" });
   const router = useRouter();
 
+  // Só executa a query se houver um valor de busca válido
+  const hasValidSearch = Boolean(search?.trim() && search.trim().length > 0);
+
   const response = useCertificateListPaginatedQuery({
-    search,
+    search: hasValidSearch ? search : undefined,
     perPage: 5,
   });
 
@@ -84,12 +87,23 @@ export function HomePage() {
           <form
             className="inline-flex gap-4 items-end"
             onSubmit={form.handleSubmit((data) => {
-              router.navigate({
-                to: "/",
-                search: { search: data.name.trim() },
-              });
+              const searchValue = data.name.trim();
 
-              response.refetch();
+              if (searchValue) {
+                // Se tem valor, navega com o search param
+                router.navigate({
+                  to: "/",
+                  search: { search: searchValue },
+                });
+              } else {
+                // Se não tem valor, remove o query param
+                router.navigate({
+                  to: "/",
+                  search: {
+                    search: undefined,
+                  },
+                });
+              }
             })}
           >
             <FormField
@@ -106,7 +120,18 @@ export function HomePage() {
                         placeholder="Digite seu nome completo"
                         className="pl-10 h-10 text-lg !uppercase"
                         onChange={(event) => {
-                          onChange(event.target.value);
+                          const value = event.target.value;
+                          onChange(value);
+
+                          // Se o input ficar vazio, remove o query param imediatamente
+                          if (!value.trim()) {
+                            router.navigate({
+                              to: "/",
+                              search: {
+                                search: undefined,
+                              },
+                            });
+                          }
                         }}
                         {...field}
                       />
@@ -118,7 +143,7 @@ export function HomePage() {
             />
             <Button
               type="submit"
-              // disabled={response.status === "pending"}
+              disabled={response.status === "pending"}
               className="disabled:cursor-not-allowed disabled:bg-gray-400 flex items-center justify-center h-10 px-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
             >
               <SearchIcon className="w-4 h-4" />
@@ -129,7 +154,7 @@ export function HomePage() {
       </div>
 
       {/* Estado de carregamento */}
-      {search && response.status === "pending" && (
+      {hasValidSearch && response.status === "pending" && (
         <div className="container mx-auto px-4 py-4 max-w-5xl gap-4 flex-1 flex flex-col">
           <div className="inline-flex items-center gap-3 text-gray-600">
             <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -138,17 +163,18 @@ export function HomePage() {
         </div>
       )}
 
-      {response.status === "success" &&
+      {hasValidSearch &&
+        response.status === "success" &&
         response.data &&
         response.data.data.length > 0 && (
-          <div className="container mx-auto px-4 py-4 max-w-5xl gap-4 inline-flex justify-between">
+          <div className="container mx-auto px-4 py-4 max-w-5xl gap-4 flex flex-col sm:flex-row justify-between">
             <div className="flex items-center gap-3">
               <FileTextIcon className="w-6 h-6 text-blue-600" />
               <h2 className="text-xl font-bold text-gray-900">
                 Certificados Encontrados
               </h2>
             </div>
-            <div className="inline-flex gap-4 items-center">
+            <div className="inline-flex justify-between gap-4 items-center">
               <div className="text-sm font-medium">
                 {response.data.meta.total}{" "}
                 {response.data.meta.total === 1
@@ -168,7 +194,8 @@ export function HomePage() {
         )}
 
       {/* Nenhum resultado encontrado */}
-      {response.status === "success" &&
+      {hasValidSearch &&
+        response.status === "success" &&
         response.data &&
         response.data.data.length === 0 && (
           <div className="container mx-auto px-4 py-4 max-w-5xl gap-4 flex-1 flex flex-col">
@@ -194,8 +221,7 @@ export function HomePage() {
         )}
 
       {/* Estado inicial - instruções */}
-      {(!search ||
-        !(response.status === "pending" || response.status === "success")) && (
+      {!hasValidSearch && (
         <div className="container mx-auto px-4 py-4 max-w-5xl gap-4 flex-1 flex flex-col">
           <Card className="bg-blue-50 border-blue-200">
             <CardContent className="p-6 text-center">
@@ -220,7 +246,8 @@ export function HomePage() {
 
       <div className="container mx-auto px-4 py-4 max-w-5xl gap-4 flex-1 flex flex-col min-h-0 overflow-auto relative">
         {/* Resultados encontrados */}
-        {response.status === "success" &&
+        {hasValidSearch &&
+          response.status === "success" &&
           response.data &&
           response.data.data.length > 0 && (
             <div className="animate-fade-in">
@@ -310,6 +337,41 @@ export function HomePage() {
             </div>
           )}
       </div>
+
+      {/* Footer */}
+      <footer className="border-t  flex-shrink-0 bg-slate-900 text-white">
+        <div className="container mx-auto px-4 py-6 max-w-5xl">
+          <div className="text-center">
+            <p className="text-sm mb-2">Uma parceria entre</p>
+            <div className="flex flex-row items-center justify-center gap-4">
+              <a
+                href="https://www.maiyu.com.br/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2  transition-colors group hover:underline"
+              >
+                <span className="font-semibold">Maiyu SH</span>
+              </a>
+
+              <a
+                href="https://hotsite.cetam.am.gov.br/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2  transition-colors group hover:underline"
+              >
+                <span className="font-semibold">CETAM BC</span>
+              </a>
+            </div>
+
+            <div className="mt-4 pt-4 border-t-gray-600 border-t">
+              <p className="text-xs opacity-80">
+                © {new Date().getFullYear()} BuscaCert. Todos os direitos
+                reservados.
+              </p>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
