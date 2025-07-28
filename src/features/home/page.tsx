@@ -143,7 +143,7 @@ export function HomePage() {
             />
             <Button
               type="submit"
-              disabled={response.status === "pending"}
+              // disabled={response.status === "pending"}
               className="disabled:cursor-not-allowed disabled:bg-gray-400 flex items-center justify-center h-10 px-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold"
             >
               <SearchIcon className="w-4 h-4" />
